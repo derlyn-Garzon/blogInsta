@@ -1,0 +1,10 @@
+{
+  "name": "blog-insta",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Blog HTML paginado que muestra las publicaciones de Instagram de un cliente vía OAuth + Supabase.",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  }
+}
