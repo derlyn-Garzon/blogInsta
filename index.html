@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Blog de Instagram</title>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; background: #fafafa; }
+        h1 { text-align: center; color: #222; }
+        .blog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-top: 20px; }
+        .post-card { background: #fff; border: 1px solid #e0e0e0; padding: 15px; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .post-card img { width: 100%; height: 250px; object-fit: cover; border-radius: 6px; }
+        .post-card p { font-size: 14px; color: #333; margin: 12px 0; }
+        .post-card small { color: #777; }
+        .pagination { margin-top: 30px; display: flex; justify-content: center; align-items: center; gap: 15px; }
+        button { padding: 8px 16px; background: #111; color: #fff; border: none; border-radius: 5px; cursor: pointer; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+    <h1>Mi Blog de Instagram</h1>
+    <p style="text-align: center; color: #666;">Publicaciones ordenadas de la más antigua a la más reciente</p>
+
+    <!-- Contenedor dinámico de publicaciones -->
+    <div id="blog-container" class="blog-grid">
+        <p style="text-align: center; width: 100%;">Cargando publicaciones...</p>
+    </div>
+
+    <!-- Controles de Paginación -->
+    <div class="pagination">
+        <button id="btn-prev" disabled>Anterior</button>
+        <span id="page-info">Página 1</span>
+        <button id="btn-next" disabled>Siguiente</button>
+    </div>
+
+    <!-- JAVASCRIPT DEL CLIENTE (Conectado al servidor) -->
+    <script>
+        let paginaActual = 1;
+        let totalPaginas = 1;
+
+        const container = document.getElementById('blog-container');
+        const btnPrev = document.getElementById('btn-prev');
+        const btnNext = document.getElementById('btn-next');
+        const pageInfo = document.getElementById('page-info');
+
+        async function cargarPublicaciones(pagina) {
+            container.innerHTML = '<p style="text-align: center; width: 100%;">Cargando publicaciones...</p>';
+            
+            try {
+                // Petición al servidor (que oculta de forma segura las llaves de Supabase)
+                const respuesta = await fetch(`/api/instagram?page=${pagina}`);
+                const datos = await respuesta.json();
+
+                if (datos.error) {
+                    container.innerHTML = `<p style="color: red; text-align: center;">Error: ${datos.error}</p>`;
+                    return;
+                }
+
+                container.innerHTML = '';
+
+                // Renderizar cada post recibido
+                datos.posts.forEach(post => {
+                    const fecha = new Date(post.timestamp).toLocaleDateString('es-ES');
+                    const card = document.createElement('div');
+                    card.className = 'post-card';
+                    card.innerHTML = `
+                        <div>
+                            <img src="${post.media_url}" alt="Post de Instagram">
+                            <p>${post.caption || 'Sin descripción'}</p>
+                        </div>
+                        <div>
+                            <small>📅 Publicado el: ${fecha}</small><br>
+                            <a href="${post.permalink}" target="_blank" style="font-size: 13px; color: #0066cc; text-decoration: none;">Ver en Instagram ↗</a>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+
+                // Actualizar paginación visual
+                paginaActual = datos.currentPage;
+                totalPaginas = datos.totalPages;
+                pageInfo.textContent = `Página ${paginaActual} de ${totalPaginas || 1}`;
+
+                btnPrev.disabled = paginaActual <= 1;
+                btnNext.disabled = paginaActual >= totalPaginas;
+
+            } catch (error) {
+                container.innerHTML = '<p style="text-align: center; color: red;">Error al conectar con el servidor.</p>';
+                console.error(error);
+            }
+        }
+
+        btnPrev.addEventListener('click', () => {
+            if (paginaActual > 1) cargarPublicaciones(paginaActual - 1);
+        });
+
+        btnNext.addEventListener('click', () => {
+            if (paginaActual < totalPaginas) cargarPublicaciones(paginaActual + 1);
+        });
+
+        // Carga inicial al abrir la página
+        cargarPublicaciones(paginaActual);
+    </script>
+
+</body>
+</html>
